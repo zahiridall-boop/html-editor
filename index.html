@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor HTML Mas-Way</title>
+    <title>Visual Scaling Studio - Mas-Way</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-    
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
 
     <style>
@@ -21,13 +20,8 @@
         body { font-family: 'Inter', sans-serif; height: 100vh; display: flex; overflow: hidden; background: #fff; }
 
         #left-pane { 
-            width: 35%; 
-            min-width: 300px; 
-            display: flex; 
-            flex-direction: column; 
-            background: #fff;
-            border-right: 1px solid var(--border);
-            z-index: 10;
+            width: 35%; min-width: 300px; display: flex; flex-direction: column; 
+            background: #fff; border-right: 1px solid var(--border); z-index: 10;
         }
 
         .editor-toolbar { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; background: #fff; }
@@ -47,48 +41,19 @@
             white-space: pre-wrap; word-wrap: break-word;
         }
 
-        /* --- STYLING SOURCE EDITOR DENGAN WORD WRAP --- */
-        .source-wrapper {
-            position: absolute; inset: 0; display: none;
-            background: var(--dark-bg);
-        }
+        .source-wrapper { position: absolute; inset: 0; display: none; background: var(--dark-bg); }
 
         #source-editor, #highlighting-content {
-            margin: 0; padding: 20px;
-            position: absolute; inset: 0;
-            width: 100%; height: 100%;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 14px; line-height: 1.5;
-            tab-size: 4; -moz-tab-size: 4;
-            
-            /* Logic Word Wrap */
-            white-space: pre-wrap !important; 
-            word-wrap: break-word !important; 
-            overflow-wrap: break-word !important;
-            border: none; outline: none;
+            margin: 0; padding: 20px; position: absolute; inset: 0;
+            width: 100%; height: 100%; font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px; line-height: 1.5; tab-size: 4; -moz-tab-size: 4;
+            white-space: pre-wrap !important; word-wrap: break-word !important; 
+            overflow-wrap: break-word !important; border: none; outline: none;
         }
 
-        #source-editor {
-            z-index: 1;
-            background: transparent;
-            color: transparent;
-            caret-color: white;
-            resize: none;
-            overflow-y: auto;
-        }
-
-        #highlighting-content {
-            z-index: 0;
-            pointer-events: none;
-            overflow-y: auto; /* Harus sama dengan textarea agar scroll sinkron */
-            background: transparent;
-        }
-
-        #highlighting-code {
-            white-space: pre-wrap !important;
-            word-wrap: break-word !important;
-        }
-        /* ----------------------------------- */
+        #source-editor { z-index: 1; background: transparent; color: transparent; caret-color: white; resize: none; overflow-y: auto; }
+        #highlighting-content { z-index: 0; pointer-events: none; overflow-y: auto; background: transparent; }
+        #highlighting-code { white-space: pre-wrap !important; word-wrap: break-word !important; }
 
         #resizer { width: 4px; background: var(--border); cursor: col-resize; transition: 0.2s; z-index: 20; }
         #resizer:hover, .dragging #resizer { background: var(--primary); width: 6px; }
@@ -96,7 +61,13 @@
         #right-pane { 
             flex: 1; position: relative; background: #cbd5e1; 
             display: flex; align-items: center; justify-content: center; overflow: hidden; 
+            /* Cursor tangan ketika zoom besar */
+            cursor: default;
         }
+        
+        /* State saat bisa digeser */
+        #right-pane.can-pan { cursor: grab; }
+        #right-pane.panning { cursor: grabbing; }
 
         #btn-toggle-ui {
             position: absolute; top: 20px; right: 20px; width: 45px; height: 45px; border-radius: 12px;
@@ -138,10 +109,16 @@
             width: 29.7cm; height: 21cm; background: #fff;
             box-shadow: 0 0 60px rgba(0,0,0,0.2); transform-origin: center center;
             transition: transform 0.2s ease-out, width 0.3s, height 0.3s;
-            position: relative; overflow: hidden; 
+            position: relative; overflow: hidden; pointer-events: none; /* Pointer-events none agar drag bisa lewat overlay */
         }
 
-        #preview-frame { width: 100%; height: 100%; border: none; } 
+        #preview-frame { width: 100%; height: 100%; border: none; pointer-events: none; } 
+        
+        /* Overlay untuk handle drag */
+        #pan-overlay {
+            position: absolute; inset: 0; z-index: 5;
+        }
+
         .btn-tool { width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer; color: #475569; transition: 0.2s; }
         .btn-tool:hover { background: #f8fafc; border-color: var(--primary); color: var(--primary); }
     </style>
@@ -150,7 +127,7 @@
 
 <div id="left-pane">
     <div class="editor-toolbar">
-        <span style="font-weight: 900; color: var(--primary); font-size: 12px; margin-right: auto; letter-spacing: 1px;">STUDIO EDITOR HTML MAS-WAY</span>
+        <span style="font-weight: 900; color: var(--primary); font-size: 12px; margin-right: auto; letter-spacing: 1px;">VISUAL SCALING STUDIO</span>
         <button class="btn-tool" title="Bold" onmousedown="event.preventDefault(); exec('bold')"><i class="fas fa-bold"></i></button>
         <button class="btn-tool" title="Italic" onmousedown="event.preventDefault(); exec('italic')"><i class="fas fa-italic"></i></button>
         <button class="btn-tool" title="Clean" onclick="cleanHTML()"><i class="fas fa-eraser"></i></button>
@@ -171,7 +148,7 @@
 <div id="resizer"></div>
 
 <div id="right-pane">
-    <button id="btn-toggle-ui" onclick="toggleUI()" title="Settings">
+    <div id="pan-overlay"></div> <button id="btn-toggle-ui" onclick="toggleUI()" title="Settings">
         <i class="fas fa-cog"></i>
     </button>
 
@@ -221,8 +198,54 @@
     const heightInput = document.getElementById('height-cm');
     const settingPanel = document.getElementById('setting-panel');
     const toggleBtn = document.getElementById('btn-toggle-ui');
+    const rightPane = document.getElementById('right-pane');
+    const panOverlay = document.getElementById('pan-overlay');
 
     let currentScale = 1.0; 
+    let posX = 0, posY = 0; // Posisi kertas
+    let startX = 0, startY = 0; // Posisi mouse awal
+    let isPanning = false;
+
+    // --- LOGIKA PANNING (GESER KERTAS) ---
+    panOverlay.addEventListener('mousedown', (e) => {
+        const canvasW = canvas.offsetWidth * currentScale;
+        const canvasH = canvas.offsetHeight * currentScale;
+        
+        // Aktifkan geser hanya jika kertas lebih besar dari layar preview
+        if (canvasW > rightPane.offsetWidth || canvasH > rightPane.offsetHeight) {
+            isPanning = true;
+            rightPane.classList.add('panning');
+            startX = e.clientX - posX;
+            startY = e.clientY - posY;
+            canvas.style.transition = 'none'; // Matikan animasi saat drag agar smooth
+        }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        posX = e.clientX - startX;
+        posY = e.clientY - startY;
+        applyScale();
+    });
+
+    document.addEventListener('mouseup', () => {
+        isPanning = false;
+        rightPane.classList.remove('panning');
+        canvas.style.transition = 'transform 0.2s ease-out, width 0.3s, height 0.3s';
+    });
+
+    function checkPanningAbility() {
+        const canvasW = canvas.offsetWidth * currentScale;
+        const canvasH = canvas.offsetHeight * currentScale;
+        if (canvasW > rightPane.offsetWidth || canvasH > rightPane.offsetHeight) {
+            rightPane.classList.add('can-pan');
+        } else {
+            rightPane.classList.remove('can-pan');
+            posX = 0; posY = 0; // Reset posisi ke tengah jika sudah kecil
+            applyScale();
+        }
+    }
+    // -------------------------------------
 
     function updateHighlighting(text) {
         let result_element = highlightCode;
@@ -237,15 +260,14 @@
 
     function fitToScreen() {
         const padding = 40;
-        const rPane = document.getElementById('right-pane');
-        if(!rPane) return;
-        const availableW = rPane.offsetWidth - padding;
-        const availableH = rPane.offsetHeight - padding;
+        const availableW = rightPane.offsetWidth - padding;
+        const availableH = rightPane.offsetHeight - padding;
         const canvasW = parseFloat(widthInput.value) * 37.8;
         const canvasH = parseFloat(heightInput.value) * 37.8;
         const scaleX = availableW / canvasW;
         const scaleY = availableH / canvasH;
         currentScale = Math.min(scaleX, scaleY, 1.0);
+        posX = 0; posY = 0; 
         applyScale();
     }
 
@@ -253,10 +275,11 @@
         el.addEventListener('keydown', function(e) {
             if (e.key === 'Tab') {
                 e.preventDefault();
+                const insert = "    ";
                 if (el === src) {
                     const start = this.selectionStart;
                     const end = this.selectionEnd;
-                    this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+                    this.value = this.value.substring(0, start) + insert + this.value.substring(end);
                     this.selectionStart = this.selectionEnd = start + 4;
                     updateHighlighting(this.value);
                 } else {
@@ -281,8 +304,7 @@
         let w = parseFloat(widthInput.value);
         let h = parseFloat(heightInput.value);
         if ((mode === 'l' && h > w) || (mode === 'p' && w > h)) {
-            widthInput.value = h;
-            heightInput.value = w;
+            widthInput.value = h; heightInput.value = w;
         }
         document.getElementById('btn-portrait').classList.toggle('active', mode === 'p');
         document.getElementById('btn-landscape').classList.toggle('active', mode === 'l');
@@ -304,33 +326,31 @@
     function resetZoom() { fitToScreen(); }
 
     function applyScale() {
-        canvas.style.transform = `scale(${currentScale})`;
+        canvas.style.transform = `translate(${posX}px, ${posY}px) scale(${currentScale})`;
         zoomVal.innerText = Math.round(currentScale * 100) + '%';
+        checkPanningAbility();
     }
 
-    let isDragging = false;
-    resizer.addEventListener('mousedown', () => { isDragging = true; document.body.classList.add('dragging'); });
+    let isResizing = false;
+    resizer.addEventListener('mousedown', () => { isResizing = true; document.body.classList.add('dragging'); });
     document.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
+        if (!isResizing) return;
         let x = e.clientX;
         if (x > 250 && x < window.innerWidth - 100) {
             leftPane.style.width = x + 'px';
             fitToScreen();
         }
     });
-    document.addEventListener('mouseup', () => { isDragging = false; document.body.classList.remove('dragging'); });
+    document.addEventListener('mouseup', () => { isResizing = false; document.body.classList.remove('dragging'); });
 
     function showTab(type) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         if(type === 'ide') {
             ide.style.display = 'block'; srcWrapper.style.display = 'none';
-            document.querySelectorAll('.tab')[0].classList.add('active');
-            ide.focus();
+            document.querySelectorAll('.tab')[0].classList.add('active'); ide.focus();
         } else {
             ide.style.display = 'none'; srcWrapper.style.display = 'block';
-            document.querySelectorAll('.tab')[1].classList.add('active');
-            updateHighlighting(src.value);
-            src.focus();
+            document.querySelectorAll('.tab')[1].classList.add('active'); updateHighlighting(src.value); src.focus();
         }
     }
 
@@ -341,10 +361,7 @@
 
     function update() {
         const content = (srcWrapper.style.display === 'block') ? src.value : ide.innerHTML;
-        
-        if (document.activeElement === src) {
-            ide.innerHTML = content;
-        }
+        if (document.activeElement === src) ide.innerHTML = content;
         if (document.activeElement === ide) {
             src.value = content;
             updateHighlighting(content);
@@ -358,17 +375,13 @@
                 <style>
                     * { box-sizing: border-box; }
                     body { 
-                        margin: 0; padding: 0; background: white; 
-                        overflow: hidden; height: 100vh; width: 100vw;
-                        display: flex; justify-content: center; align-items: flex-start;
+                        margin: 0; padding: 0; background: white; overflow: hidden; 
+                        height: 100vh; width: 100vw; display: flex; justify-content: center; align-items: flex-start;
                         font-family: 'Inter', sans-serif;
                     }
                     #content-wrapper { 
-                        width: 1000px; 
-                        transform-origin: top center; 
-                        padding: 40px;
-                        word-wrap: break-word;
-                        line-height: 1.6;
+                        width: 1000px; transform-origin: top center; 
+                        padding: 40px; word-wrap: break-word; line-height: 1.6;
                     }
                 </style>
             </head>
@@ -390,9 +403,7 @@
                     }
                     window.onload = fitToPaper;
                     window.onresize = fitToPaper;
-                    new MutationObserver(fitToPaper).observe(document.body, { 
-                        childList: true, subtree: true, characterData: true 
-                    });
+                    new MutationObserver(fitToPaper).observe(document.body, { childList: true, subtree: true, characterData: true });
                 <\/script>
             </body>
             </html>
@@ -404,10 +415,7 @@
     function exec(cmd) { document.execCommand(cmd, false, null); update(); }
 
     window.addEventListener('resize', fitToScreen);
-    setTimeout(() => {
-        fitToScreen();
-        update();
-    }, 100);
+    setTimeout(() => { fitToScreen(); update(); }, 100);
 </script>
 </body>
 </html>
