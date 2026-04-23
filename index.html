@@ -14,6 +14,7 @@
             --border: #e2e8f0;
             --dark-bg: #272822;
             --tab-bg: #f8fafc;
+            --coffee: #ffdd00;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -61,11 +62,9 @@
         #right-pane { 
             flex: 1; position: relative; background: #cbd5e1; 
             display: flex; align-items: center; justify-content: center; overflow: hidden; 
-            /* Cursor tangan ketika zoom besar */
             cursor: default;
         }
         
-        /* State saat bisa digeser */
         #right-pane.can-pan { cursor: grab; }
         #right-pane.panning { cursor: grabbing; }
 
@@ -109,18 +108,20 @@
             width: 29.7cm; height: 21cm; background: #fff;
             box-shadow: 0 0 60px rgba(0,0,0,0.2); transform-origin: center center;
             transition: transform 0.2s ease-out, width 0.3s, height 0.3s;
-            position: relative; overflow: hidden; pointer-events: none; /* Pointer-events none agar drag bisa lewat overlay */
+            position: relative; overflow: hidden; pointer-events: none;
         }
 
         #preview-frame { width: 100%; height: 100%; border: none; pointer-events: none; } 
         
-        /* Overlay untuk handle drag */
-        #pan-overlay {
-            position: absolute; inset: 0; z-index: 5;
-        }
+        #pan-overlay { position: absolute; inset: 0; z-index: 5; }
 
-        .btn-tool { width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer; color: #475569; transition: 0.2s; }
-        .btn-tool:hover { background: #f8fafc; border-color: var(--primary); color: var(--primary); }
+        .btn-coffee { 
+            width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--border); 
+            background: #fff; cursor: pointer; color: #475569; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none; font-size: 16px;
+        }
+        .btn-coffee:hover { background: #fffbeb; border-color: #f59e0b; color: #f59e0b; }
     </style>
 </head>
 <body>
@@ -128,9 +129,9 @@
 <div id="left-pane">
     <div class="editor-toolbar">
         <span style="font-weight: 900; color: var(--primary); font-size: 12px; margin-right: auto; letter-spacing: 1px;">VISUAL SCALING STUDIO</span>
-        <button class="btn-tool" title="Bold" onmousedown="event.preventDefault(); exec('bold')"><i class="fas fa-bold"></i></button>
-        <button class="btn-tool" title="Italic" onmousedown="event.preventDefault(); exec('italic')"><i class="fas fa-italic"></i></button>
-        <button class="btn-tool" title="Clean" onclick="cleanHTML()"><i class="fas fa-eraser"></i></button>
+        <a href="https://trakteer.id/mas_way99/tip" target="_blank" class="btn-coffee" title="Traktir Kopi Mas-Way">
+            <i class="fas fa-coffee"></i>
+        </a>
     </div>
     <div class="tab-bar">
         <button class="tab active" onclick="showTab('ide')">VISUAL</button>
@@ -148,7 +149,8 @@
 <div id="resizer"></div>
 
 <div id="right-pane">
-    <div id="pan-overlay"></div> <button id="btn-toggle-ui" onclick="toggleUI()" title="Settings">
+    <div id="pan-overlay"></div> 
+    <button id="btn-toggle-ui" onclick="toggleUI()" title="Settings">
         <i class="fas fa-cog"></i>
     </button>
 
@@ -202,22 +204,19 @@
     const panOverlay = document.getElementById('pan-overlay');
 
     let currentScale = 1.0; 
-    let posX = 0, posY = 0; // Posisi kertas
-    let startX = 0, startY = 0; // Posisi mouse awal
+    let posX = 0, posY = 0; 
+    let startX = 0, startY = 0; 
     let isPanning = false;
 
-    // --- LOGIKA PANNING (GESER KERTAS) ---
     panOverlay.addEventListener('mousedown', (e) => {
         const canvasW = canvas.offsetWidth * currentScale;
         const canvasH = canvas.offsetHeight * currentScale;
-        
-        // Aktifkan geser hanya jika kertas lebih besar dari layar preview
         if (canvasW > rightPane.offsetWidth || canvasH > rightPane.offsetHeight) {
             isPanning = true;
             rightPane.classList.add('panning');
             startX = e.clientX - posX;
             startY = e.clientY - posY;
-            canvas.style.transition = 'none'; // Matikan animasi saat drag agar smooth
+            canvas.style.transition = 'none';
         }
     });
 
@@ -241,11 +240,10 @@
             rightPane.classList.add('can-pan');
         } else {
             rightPane.classList.remove('can-pan');
-            posX = 0; posY = 0; // Reset posisi ke tengah jika sudah kecil
+            posX = 0; posY = 0;
             applyScale();
         }
     }
-    // -------------------------------------
 
     function updateHighlighting(text) {
         let result_element = highlightCode;
@@ -289,11 +287,6 @@
             }
         });
     });
-
-    function cleanHTML() {
-        ide.innerHTML = ide.innerText.replace(/\n/g, '<br>');
-        update();
-    }
 
     function toggleUI() {
         const isHidden = settingPanel.classList.toggle('hidden');
@@ -412,8 +405,6 @@
     }
 
     ide.addEventListener('input', update);
-    function exec(cmd) { document.execCommand(cmd, false, null); update(); }
-
     window.addEventListener('resize', fitToScreen);
     setTimeout(() => { fitToScreen(); update(); }, 100);
 </script>
